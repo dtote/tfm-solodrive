@@ -12,14 +12,14 @@ contract RegisterUser {
 
     event UserRegistered(string dni, string name);
 
-    function registerUser(string calldata dni, string calldata name) external {
-        // require(bytes(users[dni].dni).length == 0, "User already registered.");
-        users[dni] = User(dni, name);
-        // emit UserRegistered(dni, name);
+    function registerUser(string calldata _dni, string calldata _name) external {
+        require(bytes(users[_dni].dni).length == 0, "User already registered.");
+        users[_dni] = User(_dni, _name);
+        emit UserRegistered(_dni, _name);
     }
 
-    function getUser(string calldata dni) external view returns (User memory) {
-        // require(bytes(users[dni].dni).length != 0, "User not found.");
-        return users[dni];
+    function getUser(string calldata _dni) external view returns (User memory) {
+        require(bytes(users[_dni].dni).length != 0, "User not found.");
+        return users[_dni];
     }
 }
