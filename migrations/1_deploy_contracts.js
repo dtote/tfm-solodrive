@@ -1,9 +1,9 @@
-const RegisterUser = artifacts.require("RegisterUser");
-const Registration = artifacts.require("Registration");
-const StudentRegister = artifacts.require("StudentRegister");
+const AutonomousCarManager = artifacts.require("AutonomousCarManager");
+const AutonomousCarRental = artifacts.require("AutonomousCarRental");
 
-module.exports = function(deployer) {
-  deployer.deploy(RegisterUser)
-  deployer.deploy(Registration)
-  deployer.deploy(StudentRegister)
+module.exports = async function(deployer) {
+  await deployer.deploy(AutonomousCarManager)
+  const autonomousCarManager = await AutonomousCarManager.deployed()
+  
+  await deployer.deploy(AutonomousCarRental, autonomousCarManager.address)
 };
