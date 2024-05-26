@@ -1,7 +1,7 @@
 <template>
-  <Home />
+  <Landing/>
 </template>
 
 <script setup>
-  //
+//
 </script>
