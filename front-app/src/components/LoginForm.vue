@@ -2,17 +2,10 @@
   <v-container>
     <v-sheet class="mx-auto" width="400">
       <v-form fast-fail @submit.prevent="registerUser">
-        <v-text-field
-          v-model="name"
-          :rules="nameRules"
-          label="Name"
-        ></v-text-field>
+        <v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="user@example.com"></v-text-field>
 
-        <v-text-field
-          v-model="dni"
-          :rules="dniRules"
-          label="DNI"
-        ></v-text-field>
+        <!-- El tipo password no parece dejar que se comprueben las reglas -->
+        <v-text-field type="password" v-model="password" :rules="passwordRules" label="Password"></v-text-field>
         <v-btn color="primary" class="mt-2" type="submit" block>Login</v-btn>
       </v-form>
     </v-sheet>
@@ -25,28 +18,28 @@ import Web3 from 'web3'
 
 console.log('Login component is being mounted')
 
-const name = ref('')
-const dni = ref('')
+const email = ref('')
+const password = ref('')
 
 
-const nameRules = [
+const emailRules = [
   value => {
-    if (value?.length > 3) return true
+    if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) return true
 
-    return 'First name must be at least 3 characters'
+    return 'Incorrect email format'
   },
 ]
 
-const dniRules = [
+const passwordRules = [
   value => {
-    if (!/^\d{8}-[A-Z]$/.test(value)) {
-      return 'DNI must be in the format 12345678-X.'
+    if (/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value)) {
+      return 'Passwords must have at least 8 characters, one letter and one number'
     }
     return true
   }
 ]
 
-// TODO: finalizar contrato y rellenar esto
+// TODO: repensar todo esto para el login, probablemente sea un get.
 const contractABI = []
 const contractAddress = '0x..'
 
@@ -57,9 +50,9 @@ async function connectToMetaMask() {
     window.web3 = new Web3(window.ethereum)
     try {
       // Solicitamos acceso a la cuenta de metamask
-      await window.ethereum.request({ method: 'eth_requestAccounts'})
+      await window.ethereum.request({ method: 'eth_requestAccounts' })
       console.log('Connected to metamask')
-      
+
       const accounts = await window.web3.eth.getAccounts()
       return accounts[0]
 

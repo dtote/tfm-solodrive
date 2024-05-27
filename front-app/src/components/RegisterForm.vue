@@ -2,17 +2,13 @@
   <v-container>
     <v-sheet class="mx-auto" width="400">
       <v-form fast-fail @submit.prevent="registerUser">
-        <v-text-field
-          v-model="name"
-          :rules="nameRules"
-          label="Name"
-        ></v-text-field>
+        <v-text-field v-model="name" :rules="nameRules" label="Name"></v-text-field>
 
-        <v-text-field
-          v-model="dni"
-          :rules="dniRules"
-          label="DNI"
-        ></v-text-field>
+        <v-text-field v-model="dni" :rules="dniRules" label="DNI" placeholder="12345678-X"></v-text-field>
+
+        <v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="user@example.com"></v-text-field>
+
+        <v-text-field type="password" v-model="password" :rules="passwordRules" label="Password"></v-text-field>
         <v-btn color="primary" class="mt-2" type="submit" block>Submit</v-btn>
         <v-btn color="secondary" class="mt-2" @click="goToLogin" block>¿Registered already? Log in here</v-btn>
       </v-form>
@@ -29,10 +25,12 @@ console.log('Register component is being mounted')
 
 const name = ref('')
 const dni = ref('')
+const email = ref('')
+const password = ref('')
 const router = useRouter()
 
 function goToLogin() {
-  router.replace('/login')  
+  router.replace('/login')
 }
 const nameRules = [
   value => {
@@ -51,6 +49,23 @@ const dniRules = [
   }
 ]
 
+const emailRules = [
+  value => {
+    if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) return true
+
+    return 'Incorrect email format'
+  },
+]
+
+const passwordRules = [
+  value => {
+    if (/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value)) {
+      return 'Passwords must have at least 8 characters, one letter and one number'
+    }
+    return true
+  }
+]
+
 // TODO: finalizar contrato y rellenar esto
 const contractABI = []
 const contractAddress = '0x..'
@@ -62,9 +77,9 @@ async function connectToMetaMask() {
     window.web3 = new Web3(window.ethereum)
     try {
       // Solicitamos acceso a la cuenta de metamask
-      await window.ethereum.request({ method: 'eth_requestAccounts'})
+      await window.ethereum.request({ method: 'eth_requestAccounts' })
       console.log('Connected to metamask')
-      
+
       const accounts = await window.web3.eth.getAccounts()
       return accounts[0]
 
@@ -89,6 +104,8 @@ async function registerUser() {
     await contract.methods.registerUser(name.value, dni.value).send({ from: account })
 
     console.log('User registered succesfully')
+
+    router.replace('/')
   } catch (error) {
     console.error('Error registering user:', error)
   }

@@ -1,3 +1,6 @@
 <template>
-    <RegisterForm></RegisterForm>
+    <container>
+        <PageTitle title="User Registration"></PageTitle>
+        <RegisterForm></RegisterForm>
+    </container>
 </template>
