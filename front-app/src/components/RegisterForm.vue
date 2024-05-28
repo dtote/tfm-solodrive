@@ -20,15 +20,15 @@
 import { ref } from 'vue'
 import Web3 from 'web3'
 import { useRouter } from 'vue-router'
-
+import userRegistryJson from './../../../build/contracts/UserRegistry.json'
 console.log('Register component is being mounted')
 
 const name = ref('')
 const dni = ref('')
 const email = ref('')
 const password = ref('')
-const router = useRouter()
 
+const router = useRouter()
 function goToLogin() {
   router.replace('/login')
 }
@@ -66,16 +66,15 @@ const passwordRules = [
   }
 ]
 
-// TODO: finalizar contrato y rellenar esto
-const contractABI = []
-const contractAddress = '0x..'
+const contractABI = userRegistryJson.abi
+const contractAddress = '0xA3812e0dEd712f41725D39900b2e0D93ac806640'
 
 async function connectToMetaMask() {
   // Detectamos proveedor de metamask
   if (window.ethereum !== undefined) {
     console.log('Metamask is installed')
-    window.web3 = new Web3(window.ethereum)
     try {
+      window.web3 = new Web3(window.ethereum)
       // Solicitamos acceso a la cuenta de metamask
       await window.ethereum.request({ method: 'eth_requestAccounts' })
       console.log('Connected to metamask')
@@ -105,7 +104,21 @@ async function registerUser() {
 
     console.log('User registered succesfully')
 
-    router.replace('/')
+    // Se lleva a cabo el login del usuario
+    const newUser = { name: name.value, dni: dni.value, email: email.value, password: password.value }
+    localStorage.setItem('user', JSON.stringify(newUser))
+
+    // Se añade a la lista de usuarios
+    const users = JSON.parse(localStorage.getItem('users'))
+    if (!users) {
+      localStorage.setItem('users', JSON.stringify([newUser]))
+    } else {
+      users.push(newUser)
+      localStorage.setItem('users', JSON.stringify(users))
+    }
+
+    console.log('User logged in succesfully')
+    router.replace('available-cars')
   } catch (error) {
     console.error('Error registering user:', error)
   }

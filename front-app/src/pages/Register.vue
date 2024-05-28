@@ -1,6 +1,6 @@
 <template>
-    <container>
-        <PageTitle title="User Registration"></PageTitle>
-        <RegisterForm></RegisterForm>
-    </container>
+    <v-container>
+        <PageTitle title="User Registration"/>
+        <RegisterForm/>
+    </v-container>
 </template>

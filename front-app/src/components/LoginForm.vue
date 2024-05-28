@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <v-sheet class="mx-auto" width="400">
-      <v-form fast-fail @submit.prevent="registerUser">
+      <v-form fast-fail @submit.prevent="loginUser">
         <v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="user@example.com"></v-text-field>
 
         <!-- El tipo password no parece dejar que se comprueben las reglas -->
@@ -15,12 +15,16 @@
 <script setup>
 import { ref } from 'vue'
 import Web3 from 'web3'
+// import userRegistryJson from './../../../build/contracts/UserRegistry.json'
+import { useRouter } from 'vue-router';
 
 console.log('Login component is being mounted')
 
 const email = ref('')
 const password = ref('')
 
+
+const router = useRouter()
 
 const emailRules = [
   value => {
@@ -39,9 +43,8 @@ const passwordRules = [
   }
 ]
 
-// TODO: repensar todo esto para el login, probablemente sea un get.
-const contractABI = []
-const contractAddress = '0x..'
+// const contractABI = userRegistryJson.abi
+// const contractAddress = '0xA3812e0dEd712f41725D39900b2e0D93ac806640'
 
 async function connectToMetaMask() {
   // Detectamos proveedor de metamask
@@ -66,19 +69,31 @@ async function connectToMetaMask() {
   }
 }
 
-async function registerUser() {
+async function loginUser() {
   try {
-    const account = await connectToMetaMask()
+    
+    
+    // Se establece conexión con metamask
+    await connectToMetaMask()
 
     // Creamos la instancia del contrato
-    const contract = new window.web3.eth.Contract(contractABI, contractAddress)
+    // const contract = new window.web3.eth.Contract(contractABI, contractAddress)
 
-    // Invocamos la función del contrato que registra el usuario
-    await contract.methods.registerUser(name.value, dni.value).send({ from: account })
+    const users = JSON.parse(localStorage.getItem('users'))
+    const found = users.find((user) => user.email === email.value && user.password === password.value)
+    if (!found) {
+      throw new Error('User not found')
+    }
 
-    console.log('User registered succesfully')
+    // TODO: realmente no creo que sea necesario obtener los datos del usuario a traves del contrato
+    // a no ser que todo se almacene alli, pero a priori no es recomendable
+    // Invocamos la función del contrato que obtiene el usuario
+    // await contract.methods.getUser(found.dni).send({ from: account })
+
+    console.log('User logged in succesfully')
+    router.replace('available-cars')
   } catch (error) {
-    console.error('Error registering user:', error)
+    console.error('Error login user:', error)
   }
 }
 
