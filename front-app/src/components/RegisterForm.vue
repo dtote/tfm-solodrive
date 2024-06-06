@@ -1,15 +1,20 @@
 <template>
   <v-container>
     <v-sheet class="mx-auto" width="400">
-      <v-form fast-fail @submit.prevent="registerUser">
-        <v-text-field v-model="name" :rules="nameRules" label="Name"></v-text-field>
-
+      <v-form ref="form" v-model="valid" fast-fail @submit.prevent="registerUser">
+        <v-text-field v-model="username" :rules="usernameRules" label="Username"></v-text-field>
         <v-text-field v-model="dni" :rules="dniRules" label="DNI" placeholder="12345678-X"></v-text-field>
+        <v-text-field 
+          v-model="password" 
+          :rules="passwordRules" 
+          :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+          :type="showPassword ? 'text' : 'password'"
+          @click:append="showPassword = !showPassword"
+          label="Password" 
+          required>
+        </v-text-field>
 
-        <v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="user@example.com"></v-text-field>
-
-        <v-text-field type="password" v-model="password" :rules="passwordRules" label="Password"></v-text-field>
-        <v-btn color="primary" class="mt-2" type="submit" block>Submit</v-btn>
+        <v-btn :disabled="!valid" color="primary" class="mt-2" type="submit" block>Submit</v-btn>
         <v-btn color="secondary" class="mt-2" @click="goToLogin" block>¿Registered already? Log in here</v-btn>
       </v-form>
     </v-sheet>
@@ -21,53 +26,35 @@ import { ref } from 'vue'
 import Web3 from 'web3'
 import { useRouter } from 'vue-router'
 import userRegistryJson from './../../../build/contracts/UserRegistry.json'
-console.log('Register component is being mounted')
+import API from './../axios'
 
-const name = ref('')
+// Variables de estado
+const username = ref('')
 const dni = ref('')
-const email = ref('')
 const password = ref('')
-
+const form = ref(null)
+const valid = ref(false)
+const showPassword = ref(false)
 const router = useRouter()
-function goToLogin() {
+
+// Reglas formulario
+const usernameRules = [value => value?.length > 3 || 'Username must be at least 3 characters']
+const dniRules = [
+  value => /^\d{8}-[A-Z]$/.test(value) || 'DNI must be in the format 12345678-X.',
+]
+const passwordRules = [
+  value => !!value || 'Password is required',  // Verifica que el valor no esté vacío.
+  value => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value) || 'Passwords must have at least 8 characters, one letter and one number'
+]
+
+// Contrato de registro de usuarios
+const contractABI = userRegistryJson.abi
+const contractAddress = '0x249951775dEdC70844994fa3E00CeEAcc9331712'
+
+async function goToLogin() {
+  await connectToMetaMask()
   router.replace('/login')
 }
-const nameRules = [
-  value => {
-    if (value?.length > 3) return true
-
-    return 'First name must be at least 3 characters'
-  },
-]
-
-const dniRules = [
-  value => {
-    if (!/^\d{8}-[A-Z]$/.test(value)) {
-      return 'DNI must be in the format 12345678-X.'
-    }
-    return true
-  }
-]
-
-const emailRules = [
-  value => {
-    if (/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) return true
-
-    return 'Incorrect email format'
-  },
-]
-
-const passwordRules = [
-  value => {
-    if (/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value)) {
-      return 'Passwords must have at least 8 characters, one letter and one number'
-    }
-    return true
-  }
-]
-
-const contractABI = userRegistryJson.abi
-const contractAddress = '0xA3812e0dEd712f41725D39900b2e0D93ac806640'
 
 async function connectToMetaMask() {
   // Detectamos proveedor de metamask
@@ -79,11 +66,12 @@ async function connectToMetaMask() {
       await window.ethereum.request({ method: 'eth_requestAccounts' })
       console.log('Connected to metamask')
 
+      // Solicitamos acceso a las direcciones
       const accounts = await window.web3.eth.getAccounts()
-      return accounts[0]
-
+      const account = accounts[0]
+      return account
     } catch (error) {
-      console.log('User denied account access')
+      console.error('User denied account access: ', error)
       throw new Error('User denied account access')
     }
   } else {
@@ -94,33 +82,39 @@ async function connectToMetaMask() {
 
 async function registerUser() {
   try {
+    // Registro de usuario en blockchain
     const account = await connectToMetaMask()
-
-    // Creamos la instancia del contrato
     const contract = new window.web3.eth.Contract(contractABI, contractAddress)
 
-    // Invocamos la función del contrato que registra el usuario
-    await contract.methods.registerUser(name.value, dni.value).send({ from: account })
-
-    console.log('User registered succesfully')
-
-    // Se lleva a cabo el login del usuario
-    const newUser = { name: name.value, dni: dni.value, email: email.value, password: password.value }
-    localStorage.setItem('user', JSON.stringify(newUser))
-
-    // Se añade a la lista de usuarios
-    const users = JSON.parse(localStorage.getItem('users'))
-    if (!users) {
-      localStorage.setItem('users', JSON.stringify([newUser]))
-    } else {
-      users.push(newUser)
-      localStorage.setItem('users', JSON.stringify(users))
+    const isAlreadyRegistered = await contract.methods.isUserRegistered(dni.value).call()
+    if (isAlreadyRegistered) {
+      console.error('User already registered')
+      alert('This user is already registered')
+      return
     }
 
-    console.log('User logged in succesfully')
-    router.replace('available-cars')
+    await contract.methods.registerUser(username.value, dni.value).send({ from: account })
+    console.log('User registered succesfully in blockchain')
+
+    // Registro de usuario en bbdd
+    const response = await API.post('/auth/register', {
+      username: username.value,
+      dni: dni.value,
+      password: password.value
+    })
+    if (response.status === 201) {
+      console.log('User registered succesfully in API')
+
+      localStorage.setItem('jwtToken', response.data.access_token)
+      router.replace('available-cars')
+    } else {
+      console.error('Error registering user in API:', response)
+      throw new Error('Registration failed due to API error')
+    }
   } catch (error) {
-    console.error('Error registering user:', error)
+    console.error('Registration failed:', error.response ? error.response.data : error)
+    alert('Register error: ' + (error.response ? error.response.data.error : 'Unknown error'))
+    throw new Error('Failed to complete the registration process')
   }
 }
 

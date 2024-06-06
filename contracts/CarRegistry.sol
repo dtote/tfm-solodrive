@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.19;
 
-contract AutonomousCarRegistry {
+contract CarRegistry {
 
-    struct AutonomousCar {
+    struct Car {
         string model;
         string plate;
         uint32 autonomy;
@@ -12,13 +12,13 @@ contract AutonomousCarRegistry {
         address owner;
     }
 
-    mapping(string => AutonomousCar) private cars;
+    mapping(string => Car) private cars;
     string[] private allPlates;
 
     function registerCar(string memory _model, string memory _plate,  uint32 _autonomy, uint256 _price) public {
-        require(bytes(cars[_plate].plate).length == 0, "Autonomous car already registered");
+        require(bytes(cars[_plate].plate).length == 0, "Car already registered");
 
-        cars[_plate] = AutonomousCar({
+        cars[_plate] = Car({
             model: _model, 
             plate: _plate,
             autonomy: _autonomy,
@@ -30,13 +30,13 @@ contract AutonomousCarRegistry {
     }
 
     function getCar(string memory _plate) public view returns (string memory, string memory, uint32, uint256, bool, address) {
-        AutonomousCar memory car = cars[_plate];
+        Car memory car = cars[_plate];
 
-        require(bytes(car.plate).length != 0, "Autonomous car not registered");
+        require(bytes(car.plate).length != 0, "Car not registered");
 
         // El único que puede ver un coche cuando no está disponible es el dueño
         if (car.owner != msg.sender && !car.available) {
-            revert("Autonomous car not available");
+            revert("Car not available");
         }
 
         return (car.model, car.plate, car.autonomy, car.price, car.available, car.owner);

@@ -27,13 +27,9 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import autonomousCarRegistry from './../../../build/contracts/AutonomousCarRegistry.json'
-
-const contractABI = autonomousCarRegistry.abi
-const contractAddress = '0x1381cc565d123de0089DcabD5AaaFffFAF8F58dE'
+import carRegistry from './../../../build/contracts/CarRegistry.json'
 
 const availableCars = ref([])
-
 const columns = computed(() => {
     const col = [[], [], []]
     let currentColumnIndex = 0
@@ -52,47 +48,22 @@ const columns = computed(() => {
     return col
 })
 
-// async function connectToMetaMask() {
-//   // Detectamos proveedor de metamask
-//   if (window.ethereum !== undefined) {
-//     console.log('Metamask is installed')
-//     try {
-//       window.web3 = new Web3(window.ethereum)
-//       // Solicitamos acceso a la cuenta de metamask
-//       await window.ethereum.request({ method: 'eth_requestAccounts' })
-//       console.log('Connected to metamask')
-
-//       const accounts = await window.web3.eth.getAccounts()
-//       return accounts[0]
-
-//     } catch (error) {
-//       console.log('User denied account access')
-//       throw new Error('User denied account access')
-//     }
-//   } else {
-//     console.error('Metamask is not installed. Please install MetaMask and try again.')
-//     throw new Error('Metamask is not installed')
-//   }
-// }
+const contractABI = carRegistry.abi
+const contractAddress = '0x30B1705825fbF1cfb320a48051b2b7FA897a0B38'
 
 async function getAllAvailableCars() {
     try {
-        // // Conectamos con metamask
-        // await connectToMetaMask()
-
         // Creamos la instancia del contrato
         const contract = new window.web3.eth.Contract(contractABI, contractAddress)
  
         // Solicitamos las matrículas de los coches disponibles para alquilar
         const availableCarPlates = await contract.methods.getAvailableCars().call()
-        // console.log(availableCarPlates)
         for (let i = 0; i < availableCarPlates.length; i++) {
             const currentCarPlate = availableCarPlates[i]
             const car = await contract.methods.getCar(currentCarPlate).call()
             availableCars.value.push(car)
         }
 
-        // console.log(availableCars.value)
     } catch (error) {
         console.error('Failed to load available cars: ', error)
     }

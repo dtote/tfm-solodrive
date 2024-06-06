@@ -4,25 +4,23 @@ pragma solidity ^0.8.19;
 contract UserRegistry {
 
     struct User {
-        string name;
+        string username;
         string dni;
         address wallet;
     }
 
     mapping(string => User) private users;
-    // mapping(address => bool) private addressUsed;
+    mapping(string => bool) private registeredDNIs;
 
-    function registerUser(string memory _name, string memory _dni) public {
-        // require(!addressUsed[msg.sender], "Address already used");
+    function registerUser(string memory _username, string memory _dni) public {
         require(bytes(users[_dni].dni).length == 0, "User already registered");
 
         users[_dni] = User({
-            name: _name, 
+            username: _username, 
             dni: _dni,
             wallet: msg.sender
         });
-
-        // addressUsed[msg.sender] = true;
+        registeredDNIs[_dni] = true;
     }
 
     function getUser(string memory _dni) public view returns (string memory, string memory, address) {
@@ -30,7 +28,11 @@ contract UserRegistry {
 
         require(bytes(user.dni).length != 0, "User not registered");
 
-        return (user.name, user.dni, user.wallet);
+        return (user.username, user.dni, user.wallet);
+    }
+
+    function isUserRegistered(string memory _dni) public view returns (bool) {
+        return registeredDNIs[_dni];
     }
 
 }
