@@ -10,8 +10,12 @@
   "dependencies": {
     "@mdi/font": "7.0.96",
     "axios": "^1.7.2",
+    "ccxt": "^4.3.42",
     "core-js": "^3.34.0",
+    "cryptocompare": "^1.0.0",
+    "http-proxy-agent": "^7.0.2",
     "roboto-fontface": "*",
+    "uninstall": "0.0.0",
     "vue": "^3.4.0",
     "vuetify": "^3.5.0",
     "web3": "^4.9.0"

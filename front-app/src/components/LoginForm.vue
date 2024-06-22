@@ -44,7 +44,7 @@ async function loginUser() {
       console.log('User logged in succesfully in API')
       console.log(response)
       localStorage.setItem('jwtToken', response.data.access_token)
-      router.replace('available-cars')
+      router.replace('cars/available')
     } else {
       console.error('Error login user in API: ', response)
       throw new Error('Login failed due to API error')

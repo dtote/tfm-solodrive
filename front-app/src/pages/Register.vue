@@ -1,6 +1,6 @@
 <template>
     <v-container>
         <PageTitle title="User Registration"/>
-        <RegisterForm/>
+        <UserRegisterForm/>
     </v-container>
 </template>

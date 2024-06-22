@@ -8,14 +8,16 @@ contract CarRegistry {
         string plate;
         uint32 autonomy;
         uint256 price;
+        uint256 dailyCharge;
         bool available;
         address owner;
     }
 
     mapping(string => Car) private cars;
-    string[] private allPlates;
+    mapping(address => string[]) private ownerCarPlates;
+    string[] private allCarPlates;
 
-    function registerCar(string memory _model, string memory _plate,  uint32 _autonomy, uint256 _price) public {
+    function registerCar(string memory _model, string memory _plate,  uint32 _autonomy, uint256 _price, uint256 _dailyCharge) public {
         require(bytes(cars[_plate].plate).length == 0, "Car already registered");
 
         cars[_plate] = Car({
@@ -23,13 +25,21 @@ contract CarRegistry {
             plate: _plate,
             autonomy: _autonomy,
             price: _price,
+            dailyCharge: _dailyCharge,
             available: true,
             owner: msg.sender
         });
-        allPlates.push(_plate);
+        allCarPlates.push(_plate);
+        ownerCarPlates[msg.sender].push(_plate);
     }
 
-    function getCar(string memory _plate) public view returns (string memory, string memory, uint32, uint256, bool, address) {
+    function toggleCarAvailability(string memory _plate) public {
+        Car storage car = cars[_plate];
+        require(bytes(car.plate).length != 0, "Car must be registered to toggle availability.");
+        car.available = !car.available;
+    }
+
+    function getCar(string memory _plate) public view returns (string memory, string memory, uint32, uint256, uint256, bool, address) {
         Car memory car = cars[_plate];
 
         require(bytes(car.plate).length != 0, "Car not registered");
@@ -39,17 +49,21 @@ contract CarRegistry {
             revert("Car not available");
         }
 
-        return (car.model, car.plate, car.autonomy, car.price, car.available, car.owner);
+        return (car.model, car.plate, car.autonomy, car.price, car.dailyCharge, car.available, car.owner);
+    }
+    
+    function isCarRegistered(string memory _plate) public view returns (bool) {
+        return cars[_plate].owner != address(0);
     }
 
-    function getAvailableCars() public view returns (string[] memory) {
-        string[] memory availablePlates = new string[](allPlates.length);
+    function getAvailableCarPlates() public view returns (string[] memory) {
+        string[] memory availablePlates = new string[](allCarPlates.length);
         uint counter = 0;
 
         // Filtramos las matriculas de los coches que están disponibles
-        for (uint i = 0; i < allPlates.length; i++) {
-            if (cars[allPlates[i]].available) {
-                availablePlates[counter] = allPlates[i];
+        for (uint i = 0; i < allCarPlates.length; i++) {
+            if (cars[allCarPlates[i]].available) {
+                availablePlates[counter] = allCarPlates[i];
                 counter++;
             }
         }
@@ -63,4 +77,7 @@ contract CarRegistry {
         return filteredPlates;
     }
 
+    function getOwnerCarPlates(address _owner) public view returns (string[] memory) {
+        return ownerCarPlates[_owner];
+    }
 }

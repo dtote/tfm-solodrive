@@ -25,8 +25,8 @@
 import { ref } from 'vue'
 import Web3 from 'web3'
 import { useRouter } from 'vue-router'
-import userRegistryJson from './../../../build/contracts/UserRegistry.json'
-import API from './../axios'
+import userRegistryJson from '../../../build/contracts/UserRegistry.json'
+import API from '../axios'
 
 // Variables de estado
 const username = ref('')
@@ -49,7 +49,7 @@ const passwordRules = [
 
 // Contrato de registro de usuarios
 const contractABI = userRegistryJson.abi
-const contractAddress = '0x249951775dEdC70844994fa3E00CeEAcc9331712'
+const contractAddress = import.meta.env.VITE_USER_REGISTRY_CONTRACT_ADDRESS
 
 async function goToLogin() {
   await connectToMetaMask()
@@ -85,7 +85,6 @@ async function registerUser() {
     // Registro de usuario en blockchain
     const account = await connectToMetaMask()
     const contract = new window.web3.eth.Contract(contractABI, contractAddress)
-
     const isAlreadyRegistered = await contract.methods.isUserRegistered(dni.value).call()
     if (isAlreadyRegistered) {
       console.error('User already registered')
@@ -100,13 +99,14 @@ async function registerUser() {
     const response = await API.post('/auth/register', {
       username: username.value,
       dni: dni.value,
-      password: password.value
+      password: password.value,
+      wallet: account
     })
     if (response.status === 201) {
       console.log('User registered succesfully in API')
 
       localStorage.setItem('jwtToken', response.data.access_token)
-      router.replace('available-cars')
+      router.replace('cars/available')
     } else {
       console.error('Error registering user in API:', response)
       throw new Error('Registration failed due to API error')

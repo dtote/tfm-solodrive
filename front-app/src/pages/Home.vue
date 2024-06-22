@@ -1,6 +1,8 @@
 <template>
     <v-container>
         <v-container class="text-center py-10">
+            <!-- <h1>{{process.env.VUE_APP_CAR_REGISTRY_CONTRACT_ADDRESS}}</h1> -->
+            <!-- <h1>{{USER_REGISTRY_CONTRACT_ADDRESS}}</h1> -->
             <h1 class="display-2 font-weight-bold mb-4">SoloDrive, The Future Of Mobility</h1>
             <h2 class="text-center subtitle-1 font-weight-light mb-4"> <br> Rent an autonomous car for seamless travel
                 or list your own for extra income. Enjoy secure and effortless transactions

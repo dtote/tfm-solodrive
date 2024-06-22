@@ -1,5 +1,5 @@
 <template>
-    <v-container class="mt-5 text-center">
+    <v-container class="text-center">
         <v-row>
             <v-col>
                 <h1>{{title || 'No props passed yet'}}</h1>
