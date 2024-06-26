@@ -24,4 +24,7 @@ export class CreateCarDto {
     @Transform(({ value }) => parseFloat(value))
     @IsNumber()
     dailyCharge: number
+
+    @IsString()
+    imageUrl: string
 }

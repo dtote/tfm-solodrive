@@ -35,7 +35,7 @@ contract CarRegistry {
 
     function toggleCarAvailability(string memory _plate) public {
         Car storage car = cars[_plate];
-        require(bytes(car.plate).length != 0, "Car must be registered to toggle availability.");
+        require(bytes(car.plate).length != 0, "Car not registered");
         car.available = !car.available;
     }
 
@@ -43,11 +43,6 @@ contract CarRegistry {
         Car memory car = cars[_plate];
 
         require(bytes(car.plate).length != 0, "Car not registered");
-
-        // El único que puede ver un coche cuando no está disponible es el dueño
-        if (car.owner != msg.sender && !car.available) {
-            revert("Car not available");
-        }
 
         return (car.model, car.plate, car.autonomy, car.price, car.dailyCharge, car.available, car.owner);
     }
@@ -77,7 +72,36 @@ contract CarRegistry {
         return filteredPlates;
     }
 
-    function getOwnerCarPlates(address _owner) public view returns (string[] memory) {
-        return ownerCarPlates[_owner];
+    function getOwnerCarPlates() public view returns (string[] memory) {
+        return ownerCarPlates[msg.sender];
+    }
+
+    function deleteCar(string memory _plate) public {
+        // Comprobamos que exista y que esta disponible
+        require(cars[_plate].available, "Car is not available or does not exist");
+        // Comprobamos que quien trata de borrar el coche, es el propietario
+        require(cars[_plate].owner == msg.sender, "You are not the owner of this car");
+
+        // Lo eliminamos de la lista de matriculas del propietario
+        string[] storage ownerPlates = ownerCarPlates[msg.sender];
+        for (uint256 i = 0; i < ownerPlates.length; i++) {
+            if (keccak256(abi.encodePacked(ownerPlates[i])) == keccak256(abi.encodePacked(_plate))) {
+                ownerPlates[i] = ownerPlates[ownerPlates.length - 1];
+                ownerPlates.pop();
+                break;
+            }
+        }
+
+        // Lo eliminamos de la lista de todas las matriculas
+        for (uint256 i = 0; i < allCarPlates.length; i++) {
+            if (keccak256(abi.encodePacked(allCarPlates[i])) == keccak256(abi.encodePacked(_plate))) {
+                allCarPlates[i] = allCarPlates[allCarPlates.length - 1];
+                allCarPlates.pop();
+                break;
+            }
+        }
+
+        // Eliminamos los datos del coche
+        delete cars[_plate];
     }
 }

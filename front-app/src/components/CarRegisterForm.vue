@@ -7,7 +7,18 @@
         <v-text-field v-model="car.autonomy" :rules="autonomyRules" label="Autonomy (km)" placeholder="250"></v-text-field>
         <v-text-field v-model="car.price" :rules="priceRules" label="Price ($)" placeholder="40"></v-text-field>
         <v-text-field v-model="car.dailyCharge" :rules="dailyChargeRules" label="Daily charge ($)" placeholder="20"></v-text-field>
-        <v-btn :disabled="!valid" color="primary" class="mt-2" type="submit" block>Publish</v-btn>
+        <!-- <input type="file" @change="handleFileUpload"> -->
+        <v-file-input 
+          label="Upload a clear clear photo of the vehicule" 
+          variant="underlined" 
+          accept="image/*"
+          prepend-icon="mdi-camera"
+          @change="handleFileUpload">
+        </v-file-input>
+        <div v-if="previewSrc">
+          <img :src="previewSrc" alt="Image Preview" style="max-width: 100%">
+        </div>
+        <v-btn :disabled="!valid || !isFileUploaded" color="primary" class="mt-2" type="submit" block>Publish</v-btn>
         <v-btn color="red" class="mt-2" @click="goToAvailableCars" block>Cancel</v-btn>
       </v-form>
     </v-sheet>
@@ -28,9 +39,29 @@ const car = ref({
   autonomy: '',
   price: '',
   dailyCharge: '',
+  imageUrl: ''
 })
+const file = ref(null)
+const isFileUploaded = ref(null)
+const previewSrc = ref(null)
 const valid = ref(false)
 const router = useRouter()
+
+const handleFileUpload = (event) => {
+  const selectedFile = event.target.files[0]
+  if (selectedFile) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      previewSrc.value = e.target.result
+    }
+    reader.readAsDataURL(selectedFile)
+
+    file.value = selectedFile
+    isFileUploaded.value = true
+  } else {
+    isFileUploaded.value = false
+  }
+}
 
 // Reglas formulario
 const modelRules = [value => !!value || 'Car model is required']
@@ -79,15 +110,12 @@ async function connectToMetaMask() {
 // Contrato de registro de coches
 const contractABI = carRegistryJson.abi
 const contractAddress = import.meta.env.VITE_CAR_REGISTRY_CONTRACT_ADDRESS
-console.log({contractAddress})
 async function publishCar() {
   try {
     // Registro de coche en blockchain
     const account = await connectToMetaMask()
     const contract = new window.web3.eth.Contract(contractABI, contractAddress)
     const isAlreadyRegistered = await contract.methods.isCarRegistered(car.value.plate).call()
-    console.log({ isAlreadyRegistered})
-    console.log({ car: car.value })
     if (isAlreadyRegistered) {
       console.error('Car already registered')
       alert('This car is already registered')
@@ -97,8 +125,19 @@ async function publishCar() {
     await contract.methods.registerCar(car.value.model, car.value.plate, car.value.autonomy, car.value.price, car.value.dailyCharge).send({ from: account })
     console.log('User registered succesfully in blockchain')
     
-    // Registro de coche en bbdd
-    console.log("Valor de car: ", car.value)
+    const formData = new FormData()
+    const newFileName = `${car.value.plate}.${file.value.name.split('.').pop()}`
+    formData.append('file', new Blob([file.value], { type: file.value.type }), newFileName)
+
+    const uploadImgResponse = await API.post('/cars/image', formData, { headers: { 'Content-Type': 'multipart/form-data' }})
+    if (uploadImgResponse.status === 201) {
+      console.log('Image uploaded succesfully')
+    } else {
+      console.error('Error uploading image: ', uploadImgResponse)
+      throw new Error('Image upload failed')
+    }
+
+    car.value.imageUrl = `${API.defaults.baseURL}/uploads/${newFileName}`
     const response = await API.post('/cars', car.value)
     if (response.status === 201) {
       console.log('Car registered succesfully in API')

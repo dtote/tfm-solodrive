@@ -23,6 +23,9 @@ export class Car {
 
     @Prop({ default: true })
     available: boolean
+
+    @Prop()
+    imageUrl: string
 }
 
 export type CarDocument = Car & Document

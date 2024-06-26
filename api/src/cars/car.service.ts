@@ -3,6 +3,8 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Car, CarDocument } from "./schemas/car.schema";
 import { Model } from "mongoose";
 import { CreateCarDto } from "./dtos/create-car.dto";
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class CarService {
@@ -22,10 +24,51 @@ export class CarService {
     }
 
     async findOneByPlate(plate: string): Promise<CarDocument> {
-        return this.carModel.findOne({ dni: plate }).exec()
+        return this.carModel.findOne({ plate: plate }).exec()
     }
 
     async findByOwner(owner: string): Promise<Car[]> {
         return this.carModel.find({ owner }).exec()
+    }
+
+    async deleteByPlate(plate: string) {
+        try {
+            // Eliminar el registro de la base de datos
+            const result = await this.carModel.deleteOne({ plate });
+
+            if (result.deletedCount === 0) {
+                throw new Error(`No car found with plate: ${plate}`);
+            }
+
+            // Construir el path a la carpeta de uploads
+            const uploadsDir = path.join(__dirname, '../../uploads');
+
+            // Verificar que el directorio exista
+            if (!fs.existsSync(uploadsDir)) {
+                throw new Error(`Uploads directory does not exist: ${uploadsDir}`);
+            }
+
+            // Buscar y eliminar el archivo cuyo nombre contiene la matrícula
+            const files = fs.readdirSync(uploadsDir);
+            const fileToDelete = files.find(file => file.includes(plate));
+
+            if (fileToDelete) {
+                const filePath = path.join(uploadsDir, fileToDelete);
+                fs.unlinkSync(filePath);
+                console.log(`Image deleted successfully: ${filePath}`);
+            } else {
+                console.log(`No image found for plate: ${plate}`);
+            }
+
+            return result;
+        } catch (error) {
+            console.error(`Error deleting car with plate ${plate}:`, error);
+            throw error;
+        }
+    }
+
+    async toggleAvailability(plate: string) {
+        const car = await this.findOneByPlate(plate)
+        return this.carModel.updateOne({ plate }, { available: !car.available })
     }
 }

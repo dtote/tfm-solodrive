@@ -2,27 +2,25 @@
 <v-container>
     <PagesBar/>
     <v-container>
-        <v-row dense>
+        <v-row dense class="mt-11">
             <v-col class="text-center" cols="4" v-for="(column, index) in columns" :key="index">
                 <v-card
                     variant="outlined"
                     v-for="rental in column"
                     :key="rental.plate"
-                    class="mx-4 my-4 pa-2"
+                    class="car-card mx-2 pa-4"
                 >
-                    <v-card-title>{{ rental.plate }}</v-card-title>
-                    <v-card-subtitle>Price: <strong>{{ rental.price }}$</strong></v-card-subtitle>
-                    <v-card-subtitle>Daily Charge: <strong>{{ rental.dailyCharge }}$</strong></v-card-subtitle>
-                    <v-card-subtitle>Funds: <strong>{{ rental.funds }}$</strong></v-card-subtitle>
-                    <v-card-subtitle>Charges: <strong>{{ rental.charges }}$</strong></v-card-subtitle>
-                    <v-card-subtitle>Phone: <strong>{{ rental.phone }}</strong></v-card-subtitle>
-                    <v-card-subtitle>Owner: <strong>{{ rental.owner }}</strong></v-card-subtitle>
-                    <v-card-subtitle>Client: <strong>{{ rental.client }}</strong></v-card-subtitle>
-                    <v-btn :disabled="!valid" color="primary" class="mt-2" type="submit" block>
+                    <v-img :src="rental.imageUrl" class="car-image" height="200px" width="100%">
+                        <v-card-title>{{ rental.model }}</v-card-title>
+                    </v-img>
+                    <v-card-subtitle class="text-left">Plate: <strong>{{ rental.plate }}</strong></v-card-subtitle>
+                    <v-card-subtitle class="mt-2 text-left">Next Charge: <strong>{{ rental.dailyCharge }}$</strong></v-card-subtitle>
+                    <v-card-subtitle class="mt-2 text-left">Funds: <strong>{{ rental.funds }}$</strong> / Charges:<strong> {{rental.charges}}$</strong></v-card-subtitle>
+                    <v-btn color="primary" class="mt-2" block>
                         Add Funds
                         <v-icon class="ml-2">mdi-wallet</v-icon>
                     </v-btn>
-                    <v-btn color="red" class="mt-2" @click="goToAvailableCars" block>
+                    <v-btn color="red" class="mt-2" block>
                         Return
                         <v-icon class="ml-2">mdi-car-arrow-left</v-icon>
                     </v-btn>            
@@ -38,6 +36,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router';
 import Web3 from 'web3'
 import carRentalJson from '../../../build/contracts/CarRentalContract.json'
+import API from '@/axios';
 
 
 const clientRentals = ref([])
@@ -54,6 +53,8 @@ const columns = computed(() => {
             phone: rental[5],
             owner: rental[6],
             client: rental[7],
+            imageUrl: rental[8],
+            model: rental[9]
         }
         col[currentColumnIndex].push(rentalToBeAdded)
         currentColumnIndex = (currentColumnIndex + 1) % 3
@@ -82,19 +83,18 @@ async function getOwnerCars() {
  
         // Solicitamos las matrículas de los coches publicados por el usuario
         const clientRentalCarPlates = await contract.methods.getClientRentalCarPlates(account).call()
-        for (let i = 0; i < clientRentalCarPlates.length; i++) {
-            const currentRentalCarPlate = clientRentalCarPlates[i]
-            const rental = await contract.methods.getRental(currentRentalCarPlate).call()
-            clientRentals.value.push(rental)
-        }
-        console.log({ ownerCarPlates: clientRentalCarPlates })
+        clientRentals.value = await Promise.all(clientRentalCarPlates.map(async (currentCarPlate) => {
+            const rental = await contract.methods.getRental(currentCarPlate).call()
+            const { data: car } = await API.get(`/cars/${currentCarPlate}`)
+            rental[8] = car.imageUrl
+            rental[9] = car.model
 
+            return rental
+        }))
     } catch (error) {
         console.error('Failed to load owner cars: ', error)
     }
 }
-
-// Ahora queda que en la tarjeta salga lo de devolver y lo de añadir fondos
 
 onMounted(async () => {
     if (window.ethereum) {

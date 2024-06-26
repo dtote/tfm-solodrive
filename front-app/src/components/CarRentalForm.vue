@@ -55,7 +55,6 @@ const contactPhoneRules = [
 
 const goToAvailableCars = () => router.push('/cars/available')
 
-const createRentalContract = () => {}
 // Contrato de registro de coches
 const carRegistryABI = carRegistryJson.abi
 const carRegistryAddress = import.meta.env.VITE_CAR_REGISTRY_CONTRACT_ADDRESS
@@ -114,6 +113,9 @@ async function createRental(plate, price, dailyCharge, phone, owner) {
     await contract.methods.createRental(plate, price, dailyCharge, phone, owner).send({ from: account, value: window.web3.utils.toWei(amountInEther.toString(), 'ether')  })
     console.log('Rental contract created successfully')
   
+    await API.patch(`cars/${plate}`)
+    console.log('Car availability updated succesfully in API')
+    
     router.push('/cars/available')
     } catch (error) {
     console.error('Rental contract failed: ', error)
