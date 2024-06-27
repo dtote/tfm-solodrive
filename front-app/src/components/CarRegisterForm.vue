@@ -7,7 +7,6 @@
         <v-text-field v-model="car.autonomy" :rules="autonomyRules" label="Autonomy (km)" placeholder="250"></v-text-field>
         <v-text-field v-model="car.price" :rules="priceRules" label="Price ($)" placeholder="40"></v-text-field>
         <v-text-field v-model="car.dailyCharge" :rules="dailyChargeRules" label="Daily charge ($)" placeholder="20"></v-text-field>
-        <!-- <input type="file" @change="handleFileUpload"> -->
         <v-file-input 
           label="Upload a clear clear photo of the vehicule" 
           variant="underlined" 
@@ -29,7 +28,6 @@
 import { ref } from 'vue'
 import Web3 from 'web3'
 import { useRouter } from 'vue-router'
-import carRegistryJson from '../../../build/contracts/CarRegistry.json'
 import API from '../axios'
 
 // Variables de estado
@@ -39,6 +37,7 @@ const car = ref({
   autonomy: '',
   price: '',
   dailyCharge: '',
+  owner: '',
   imageUrl: ''
 })
 const file = ref(null)
@@ -46,22 +45,6 @@ const isFileUploaded = ref(null)
 const previewSrc = ref(null)
 const valid = ref(false)
 const router = useRouter()
-
-const handleFileUpload = (event) => {
-  const selectedFile = event.target.files[0]
-  if (selectedFile) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      previewSrc.value = e.target.result
-    }
-    reader.readAsDataURL(selectedFile)
-
-    file.value = selectedFile
-    isFileUploaded.value = true
-  } else {
-    isFileUploaded.value = false
-  }
-}
 
 // Reglas formulario
 const modelRules = [value => !!value || 'Car model is required']
@@ -81,7 +64,24 @@ const dailyChargeRules = [
   value => !!value || 'Car daily charge is required',
   value => /^\d*$/.test(value) || 'Car daily charge must be a number'
 ]
+
 const goToAvailableCars = () => router.push('/cars/available')
+
+const handleFileUpload = (event) => {
+  const selectedFile = event.target.files[0]
+  if (selectedFile) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      previewSrc.value = e.target.result
+    }
+    reader.readAsDataURL(selectedFile)
+
+    file.value = selectedFile
+    isFileUploaded.value = true
+  } else {
+    isFileUploaded.value = false
+  }
+}
 
 async function connectToMetaMask() {
   // Detectamos proveedor de metamask
@@ -107,50 +107,34 @@ async function connectToMetaMask() {
   }
 }
 
-// Contrato de registro de coches
-const contractABI = carRegistryJson.abi
-const contractAddress = import.meta.env.VITE_CAR_REGISTRY_CONTRACT_ADDRESS
+const createFormData = (file, newFileName) => {
+  const formData = new FormData()
+  formData.append('file', new Blob([file.value], { type: file.value.type }), newFileName)
+  return formData
+}
+
 async function publishCar() {
   try {
-    // Registro de coche en blockchain
+    // Establecemos el propietario del vehiculo
     const account = await connectToMetaMask()
-    const contract = new window.web3.eth.Contract(contractABI, contractAddress)
-    const isAlreadyRegistered = await contract.methods.isCarRegistered(car.value.plate).call()
-    if (isAlreadyRegistered) {
-      console.error('Car already registered')
-      alert('This car is already registered')
-      return
-    }
-
-    await contract.methods.registerCar(car.value.model, car.value.plate, car.value.autonomy, car.value.price, car.value.dailyCharge).send({ from: account })
-    console.log('User registered succesfully in blockchain')
+    car.value.owner = account
     
-    const formData = new FormData()
-    const newFileName = `${car.value.plate}.${file.value.name.split('.').pop()}`
-    formData.append('file', new Blob([file.value], { type: file.value.type }), newFileName)
+    // Subimos la imagen del coche
+    const filename = `${car.value.plate}.${file.value.name.split('.').pop()}`
+    await API.post('/cars/image', createFormData(file, filename), { headers: { 'Content-Type': 'multipart/form-data' }})
 
-    const uploadImgResponse = await API.post('/cars/image', formData, { headers: { 'Content-Type': 'multipart/form-data' }})
-    if (uploadImgResponse.status === 201) {
-      console.log('Image uploaded succesfully')
-    } else {
-      console.error('Error uploading image: ', uploadImgResponse)
-      throw new Error('Image upload failed')
-    }
+    // Seteamos la url de la imagen subida
+    car.value.imageUrl = `${API.defaults.baseURL}/uploads/${filename}`
 
-    car.value.imageUrl = `${API.defaults.baseURL}/uploads/${newFileName}`
-    const response = await API.post('/cars', car.value)
-    if (response.status === 201) {
-      console.log('Car registered succesfully in API')
-      alert('Car published succesfully!')
-      router.replace('available')
-    } else {
-      console.error('Error registering car in API: ', response)
-      throw new Error('Registration failed due to API error')
-    }
+    // Registramos el coche en la bbdd
+    await API.post('/cars', car.value)
+
+    // Redirigimos a pantalla de vehiculos disponibles
+    router.replace('available')
+
   } catch (error) {
-    console.error('Car publication failed:', error.response ? error.response.data : error)
-    alert('Car publication error: ' + (error.response ? error.response.data.error : 'Unknown error'))
-    throw new Error('Failed to complete the car publication process')
+    console.error('Car publication error:', error.response ? error.response.data : error)
+    alert('Car publication error: ' + (error.response ? error.response.data.message : 'Unknown error'))
   }
 }
 

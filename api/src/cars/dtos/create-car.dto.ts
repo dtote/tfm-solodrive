@@ -25,6 +25,11 @@ export class CreateCarDto {
     @IsNumber()
     dailyCharge: number
 
+    @IsNotEmpty()
+    @IsString()
+    owner: string
+
+    @IsNotEmpty()
     @IsString()
     imageUrl: string
 }

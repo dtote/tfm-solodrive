@@ -25,7 +25,6 @@
 import { ref } from 'vue'
 import Web3 from 'web3'
 import { useRouter } from 'vue-router'
-import userRegistryJson from '../../../build/contracts/UserRegistry.json'
 import API from '../axios'
 
 // Variables de estado
@@ -46,10 +45,6 @@ const passwordRules = [
   value => !!value || 'Password is required',  // Verifica que el valor no esté vacío.
   value => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value) || 'Passwords must have at least 8 characters, one letter and one number'
 ]
-
-// Contrato de registro de usuarios
-const contractABI = userRegistryJson.abi
-const contractAddress = import.meta.env.VITE_USER_REGISTRY_CONTRACT_ADDRESS
 
 async function goToLogin() {
   await connectToMetaMask()
@@ -84,16 +79,6 @@ async function registerUser() {
   try {
     // Registro de usuario en blockchain
     const account = await connectToMetaMask()
-    const contract = new window.web3.eth.Contract(contractABI, contractAddress)
-    const isAlreadyRegistered = await contract.methods.isUserRegistered(dni.value).call()
-    if (isAlreadyRegistered) {
-      console.error('User already registered')
-      alert('This user is already registered')
-      return
-    }
-
-    await contract.methods.registerUser(username.value, dni.value).send({ from: account })
-    console.log('User registered succesfully in blockchain')
 
     // Registro de usuario en bbdd
     const response = await API.post('/auth/register', {

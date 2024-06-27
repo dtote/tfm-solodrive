@@ -21,11 +21,11 @@ export class Car {
     @Prop()
     owner: string
 
-    @Prop({ default: true })
-    available: boolean
-
     @Prop()
     imageUrl: string
+
+    @Prop({ default: true })
+    available: boolean
 }
 
 export type CarDocument = Car & Document

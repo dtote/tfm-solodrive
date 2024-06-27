@@ -31,36 +31,21 @@ export class CarService {
         return this.carModel.find({ owner }).exec()
     }
 
+    async findAvailableCars() : Promise<Car[]> {
+        return this.carModel.find({ available: true }).exec()
+    }
+
     async deleteByPlate(plate: string) {
         try {
-            // Eliminar el registro de la base de datos
-            const result = await this.carModel.deleteOne({ plate });
+            const deleted = await this.carModel.deleteOne({ plate });
 
-            if (result.deletedCount === 0) {
+            if (deleted.deletedCount === 0) {
                 throw new Error(`No car found with plate: ${plate}`);
             }
 
-            // Construir el path a la carpeta de uploads
-            const uploadsDir = path.join(__dirname, '../../uploads');
+            this.deleteCarImage(plate)
 
-            // Verificar que el directorio exista
-            if (!fs.existsSync(uploadsDir)) {
-                throw new Error(`Uploads directory does not exist: ${uploadsDir}`);
-            }
-
-            // Buscar y eliminar el archivo cuyo nombre contiene la matrícula
-            const files = fs.readdirSync(uploadsDir);
-            const fileToDelete = files.find(file => file.includes(plate));
-
-            if (fileToDelete) {
-                const filePath = path.join(uploadsDir, fileToDelete);
-                fs.unlinkSync(filePath);
-                console.log(`Image deleted successfully: ${filePath}`);
-            } else {
-                console.log(`No image found for plate: ${plate}`);
-            }
-
-            return result;
+            return deleted;
         } catch (error) {
             console.error(`Error deleting car with plate ${plate}:`, error);
             throw error;
@@ -70,5 +55,25 @@ export class CarService {
     async toggleAvailability(plate: string) {
         const car = await this.findOneByPlate(plate)
         return this.carModel.updateOne({ plate }, { available: !car.available })
+    }
+
+    private deleteCarImage(plate: string) {
+        // Construir el path a la carpeta de uploads
+        const uploadsDir = path.join(__dirname, '../../uploads');
+
+        // Verificar que el directorio exista
+        if (!fs.existsSync(uploadsDir)) {
+            throw new Error(`Uploads directory does not exist: ${uploadsDir}`);
+        }
+
+        // Buscar y eliminar el archivo cuyo nombre contiene la matrícula
+        const files = fs.readdirSync(uploadsDir);
+        const fileToDelete = files.find(file => file.includes(plate));
+
+        if (fileToDelete) {
+            const filePath = path.join(uploadsDir, fileToDelete);
+            fs.unlinkSync(filePath);
+            console.log(`Image deleted successfully: ${filePath}`);
+        }
     }
 }

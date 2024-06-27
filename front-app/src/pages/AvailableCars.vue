@@ -28,7 +28,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Web3 from 'web3'
-import carRegistry from './../../../build/contracts/CarRegistry.json'
 import API from '@/axios';
 
 const availableCars = ref([])
@@ -36,17 +35,7 @@ const columns = computed(() => {
     const col = [[], [], []]
     let currentColumnIndex = 0
     availableCars.value.forEach((car) => {
-        const carToBeAdded = {
-            model: car[0],
-            plate: car[1],
-            autonomy: car[2].toString(),
-            price: car[3].toString(),
-            dailyCharge: car[4].toString(),
-            available: car[5],
-            owner: car[6],
-            imageUrl: car[7]
-        }
-        col[currentColumnIndex].push(carToBeAdded)
+        col[currentColumnIndex].push(car)
         currentColumnIndex = (currentColumnIndex + 1) % 3
     })
     return col
@@ -56,34 +45,13 @@ const router = useRouter()
 const goToCarRegister = () => router.push('/cars/register')
 const goToRentalForm = (plate) => router.push({ name: 'CarRental', params: { plate } })
 
-const contractABI = carRegistry.abi
-const contractAddress = import.meta.env.VITE_CAR_REGISTRY_CONTRACT_ADDRESS
 async function getAllAvailableCars() {
     try {
-        // Creamos la instancia del contrato
-        const contract = new window.web3.eth.Contract(contractABI, contractAddress)
-
-        // Solicitamos las matrículas de los coches disponibles para alquilar
-        const availableCarPlates = await contract.methods.getAvailableCarPlates().call()
-        availableCars.value = await Promise.all(availableCarPlates.map(async (currentCarPlate) => {
-            const car = await contract.methods.getCar(currentCarPlate).call()
-            console.log({ car })
-            const imageUrl = await getCarImage(currentCarPlate)
-            car[7] = imageUrl
-            return car
-        }))
+        const { data: cars } = await API.get('cars')
+        availableCars.value = cars
     } catch (error) {
         console.error('Failed to load available cars: ', error)
     }
-}
-
-const getCarImage = async (plate) => {
-    const { data: car } = await API.get(`/cars/${plate}`);
-
-    if (car && car.imageUrl) {
-      return car.imageUrl;
-    } 
-    return 'http://localhost:8000/uploads/default.png';
 }
 
 onMounted(async () => {

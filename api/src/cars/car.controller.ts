@@ -21,6 +21,11 @@ export class CarController {
         return { message: 'File uploaded successfully', file };
     }
 
+    @Get()
+    async getAvailableCars() {
+        return this.carService.findAvailableCars()
+    }
+
     @Get(':plate')
     async getCar(@Param('plate') plate: string) {
         return this.carService.findOneByPlate(plate)
