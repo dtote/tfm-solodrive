@@ -47,7 +47,7 @@ const goToRentalForm = (plate) => router.push({ name: 'CarRental', params: { pla
 
 async function getAllAvailableCars() {
     try {
-        const { data: cars } = await API.get('cars')
+        const { data: cars } = await API.get('cars/available')
         availableCars.value = cars
     } catch (error) {
         console.error('Failed to load available cars: ', error)

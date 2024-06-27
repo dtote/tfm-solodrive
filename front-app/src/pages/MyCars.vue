@@ -36,7 +36,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router';
 import Web3 from 'web3'
-import carRegistry from './../../../build/contracts/CarRegistry.json'
 import API from '@/axios';
 
 const ownerCars = ref([])
@@ -44,17 +43,7 @@ const columns = computed(() => {
     const col = [[], [], []]
     let currentColumnIndex = 0
     ownerCars.value.forEach((car) => {
-        const carToBeAdded = {
-            model: car[0],
-            plate: car[1],
-            autonomy: car[2].toString(),
-            price: car[3].toString(),
-            dailyCharge: car[4].toString(),
-            available: car[5],
-            owner: car[6],
-            imageUrl: car[7]
-        }
-        col[currentColumnIndex].push(carToBeAdded)
+        col[currentColumnIndex].push(car)
         currentColumnIndex = (currentColumnIndex + 1) % 3
     })
     return col
@@ -63,67 +52,38 @@ const columns = computed(() => {
 const router = useRouter()
 const goToCarRegister = () => router.push('/cars/register')
 
-const contractABI = carRegistry.abi
-const contractAddress = import.meta.env.VITE_CAR_REGISTRY_CONTRACT_ADDRESS
-
 async function getOwnerAccount() {
     if (!window.ethereum) {
         console.error("Please install MetaMask!");
         return;
     }
     const web3 = new Web3(window.ethereum);
-    const accounts = await web3.eth.getAccounts(); // Obtiene la dirección actual de MetaMask
-    const account = accounts[0]; // Asume que queremos la primera cuenta
+    const accounts = await web3.eth.getAccounts();
+    const account = accounts[0];
 
     return account
 }
 
 async function deleteOwnerCar(plate) {
-    const account = await getOwnerAccount()
-
     try {
-        const contract = new window.web3.eth.Contract(contractABI, contractAddress)
-        await contract.methods.deleteCar(plate).send({ from: account })
-        console.log('Car deleted succesfully from blockchain')
+        const owner = await getOwnerAccount()
 
-        await API.delete(`cars/${plate}`)
-        console.log('Car deleted succesfully from API')
-
+        await API.delete(`cars/${plate}`, { params: { owner }})
         await getOwnerCars();
     } catch (error) {
-        console.error('Error deleting car: ', error)
+        console.error('Failed deleting car: ', error)
     }
 }
 
 async function getOwnerCars() {
-
-    const account = await getOwnerAccount()
     try {
-        // Creamos la instancia del contrato
-        const contract = new window.web3.eth.Contract(contractABI, contractAddress)
+        const owner = await getOwnerAccount()
 
-        // Solicitamos las matrículas de los coches publicados por el usuario
-        const ownerCarPlates = await contract.methods.getOwnerCarPlates().call({ from: account })
-        
-        ownerCars.value = await Promise.all(ownerCarPlates.map(async (currentCarPlate) => {
-            const car = await contract.methods.getCar(currentCarPlate).call()
-            const imageUrl = await getCarImage(currentCarPlate)
-            car[7] = imageUrl
-            return car
-        }))
+        const { data: cars } = await API.get(`cars/owned/${owner}`)
+        ownerCars.value = cars
     } catch (error) {
         console.error('Failed to load owner cars: ', error)
-        alert(`Error loading owner cars: ${error.message}`);
     }
-}
-
-const getCarImage = async (plate) => {
-    const { data: car } = await API.get(`/cars/${plate}`);
-
-    if (car && car.imageUrl) {
-      return car.imageUrl;
-    } 
-    return 'http://localhost:8000/uploads/default.png';
 }
 
 onMounted(async () => {

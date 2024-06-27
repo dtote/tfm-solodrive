@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Car, CarDocument } from "./schemas/car.schema";
 import { Model } from "mongoose";
@@ -35,17 +35,22 @@ export class CarService {
         return this.carModel.find({ available: true }).exec()
     }
 
-    async deleteByPlate(plate: string) {
+    async deleteByPlate(plate: string, owner: string) {
         try {
-            const deleted = await this.carModel.deleteOne({ plate });
+            const car = await this.carModel.findOne({ plate })
 
-            if (deleted.deletedCount === 0) {
-                throw new Error(`No car found with plate: ${plate}`);
+            if (!car) {
+                throw new NotFoundException()
             }
 
+            if (car.owner !== owner) {
+                throw new UnauthorizedException()
+            }
+
+            await this.carModel.deleteOne({ plate });
             this.deleteCarImage(plate)
 
-            return deleted;
+            return { message: 'Car deleted successfully' }
         } catch (error) {
             console.error(`Error deleting car with plate ${plate}:`, error);
             throw error;

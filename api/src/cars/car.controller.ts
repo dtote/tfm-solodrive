@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Logger, Param, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Logger, Param, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { CarService } from "./car.service";
 import { CreateCarDto } from "./dtos/create-car.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -21,9 +21,14 @@ export class CarController {
         return { message: 'File uploaded successfully', file };
     }
 
-    @Get()
+    @Get('available')
     async getAvailableCars() {
         return this.carService.findAvailableCars()
+    }
+
+    @Get('owned/:owner')
+    async getOwnerCars(@Param('owner') owner: string) {
+        return this.carService.findByOwner(owner)
     }
 
     @Get(':plate')
@@ -37,7 +42,7 @@ export class CarController {
     }
 
     @Delete(':plate')
-    async deleteCar(@Param('plate') plate: string) {
-        return this.carService.deleteByPlate(plate)
+    async deleteCar(@Param('plate') plate: string, @Query('owner') owner: string) {
+        return this.carService.deleteByPlate(plate, owner)
     }
 }
