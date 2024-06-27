@@ -6,20 +6,16 @@
                 <v-btn color="primary" @click="goToCarRegister">¿Wanna publish your car? Click me!</v-btn>
             </v-row>
             <v-row dense>
-                <v-col class="text-center" cols="4" v-for="(column, index) in columns" :key="index">
-                    <v-card variant="outlined" v-for="car in column" :key="car.plate" class="car-card mx-4 pa-6">
-                        <v-card-title>{{ car.model }}</v-card-title>
-                        <v-img :src="car.imageUrl" class="car-image" height="150px" width="100%">
-                        </v-img>
-                        <v-card-subtitle class="mt-2 text-left">Price: <strong>{{ car.price }}$</strong> / Daily charge:
-                            <strong>{{ car.dailyCharge }}$</strong></v-card-subtitle>
-                        <v-card-subtitle class="mt-2 text-left">Car plate: <strong>{{ car.plate
-                                }}</strong></v-card-subtitle>
-                        <v-card-subtitle class="mt-2 text-left">Autonomy: <strong>{{ car.autonomy
-                                }}km</strong></v-card-subtitle>
-                        <v-btn flat color="primary" class="mt-2" @click="goToRentalForm(car.plate)">
-                            Rent
-                            <v-icon class="ml-2">mdi-credit-card</v-icon>
+                <v-col class="text-center" cols="12" sm="6" md="4" v-for="(column, index) in columns" :key="index">
+                    <v-card variant="outlined" class="mx-4 my-2" v-for="car in column" :key="car.plate">
+                        <v-img :src="car.imageUrl" aspect-ratio="2.5"></v-img>
+                        <v-card-title class="justify-center">{{ car.model }}</v-card-title>
+                        <v-card-text class="text-center">
+                            <div class="mb-1">Plate: <strong>{{ car.plate }}</strong></div>
+                            <div>Autonomy: <strong>{{ car.autonomy }}km</strong></div>
+                        </v-card-text>
+                        <v-btn flat color="primary" @click="goToRentalForm(car.plate)" class="mb-2">
+                            Rent for {{ car.price }}$ / day<v-icon class="ml-2">mdi-credit-card</v-icon>
                         </v-btn>
                     </v-card>
                 </v-col>
@@ -99,13 +95,3 @@ onMounted(async () => {
     }
 })
 </script>
-
-<style scoped>
-.car-card {
-  height: 370px;
-}
-
-.car-image {
-    object-fit: cover;
-}
-</style>

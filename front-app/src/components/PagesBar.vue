@@ -26,7 +26,7 @@ const router = useRouter();
 const route = useRoute();
 const menuItems = ref([
     { text: 'Rent a car', icon: 'mdi-car', route: '/cars/available' },
-    { text: 'Car payments / returns', icon: 'mdi-car-arrow-left', route: '/cars/returns' },
+    { text: 'Car returns', icon: 'mdi-car-arrow-left', route: '/cars/returns' },
     { text: 'My cars', icon: 'mdi-garage', route: '/cars/mycars' },
     { text: 'Profile', icon: 'mdi-account', route: '/profile' },
 ]);

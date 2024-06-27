@@ -6,25 +6,24 @@
             <v-btn color="primary" @click="goToCarRegister">Publish new car</v-btn>
         </v-row>
         <v-row dense>
-            <v-col class="text-center" cols="4" v-for="(column, index) in columns" :key="index">
-                <v-card variant="outlined" v-for="car in column" :key="car.plate" class="car-card mx-2 pa-4">
-                    <v-img :src="car.imageUrl" class="car-image" height="200px" width="100%">
-                        <v-card-title>{{ car.model }}</v-card-title>
+            <v-col class="text-center" cols="12" sm="6" md="4" v-for="(column, index) in columns" :key="index">
+                <v-card variant="outlined" class="car-card mx-2 my-2" v-for="car in column" :key="car.plate">
+                    <v-img :src="car.imageUrl" class="car-image" aspect-ratio="2.5">
                     </v-img>
-                    <v-card-subtitle class="text-left">Price: <strong>{{ car.price }}$</strong> / Daily charge:
-                        <strong>{{ car.dailyCharge }}$</strong></v-card-subtitle>
-                    <v-card-subtitle class="mt-2 text-left">Car plate: <strong>{{ car.plate
-                            }}</strong></v-card-subtitle>
-                    <v-card-subtitle class="mt-2 text-left">Autonomy: <strong>{{ car.price
-                            }}km</strong></v-card-subtitle>
-                    <v-card-subtitle class="mt-2 text-left">Available:
-                        <v-icon :color="car.available ? 'green' : 'red'" size="16">
-                            mdi-circle
-                        </v-icon>
-                    </v-card-subtitle>
-                    <v-btn flat color="red" class="mt-2" :disabled="!car.available" @click="deleteOwnerCar(car.plate)">
-                        Delete
-                        <v-icon class="ml-2">mdi-trash-can-outline</v-icon>
+                    <v-card-title class="justify-center">{{ car.model }} - {{ car.price }}$ / day</v-card-title>
+                    <v-card-text class="text-center">
+                        <div class="mb-1">Plate: <strong>{{ car.plate }}</strong></div>
+                        <div>Autonomy: <strong>{{ car.autonomy }}km</strong></div>
+                    </v-card-text>
+                    <v-btn flat color="red" class="mb-2" :disabled="!car.available" @click="deleteOwnerCar(car.plate)">
+                        <template v-if="car.available">
+                            Delete
+                            <v-icon class="ml-2">mdi-trash-can-outline</v-icon>
+                        </template>
+                        <template v-else>
+                            Currently in use
+                            <v-icon class="ml-2">mdi-lock-outline</v-icon>
+                        </template>
                     </v-btn>
                 </v-card>
             </v-col>
@@ -136,13 +135,3 @@ onMounted(async () => {
     }
 })
 </script>
-
-<style scoped>
-.car-card {
-  height: 380px; /* Ajustar según sea necesario */
-}
-
-.car-image {
-    object-fit: cover;
-}
-</style>

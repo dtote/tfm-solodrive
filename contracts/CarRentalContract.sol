@@ -65,4 +65,28 @@ contract CarRentalContract {
     function getClientRentalCarPlates(address _client) public view returns (string[] memory) {
         return clientRentalCarPlates[_client];
     }
+
+    function deleteRental(string memory _plate) public {
+        RentalContract storage rental = rentals[_plate];
+
+        require(rental.owner != address(0), "Rental contract does not exist");
+        // Solo el cliente puede terminar la renta (en este caso permitimos tambien al propietario)
+        require(msg.sender == rental.client || msg.sender == rental.owner, "Unauthorized");
+
+        // Eliminamos la matricula del coche de la lista de matriculas rentadas por el cliente
+        string[] storage plates = clientRentalCarPlates[rental.client];
+        for (uint i = 0; i < plates.length; i++) {
+            if (keccak256(bytes(plates[i])) == keccak256(bytes(_plate))) {
+                plates[i] = plates[plates.length - 1];
+                plates.pop();
+                break;
+            }
+        }
+
+        // Actualizamos la disponibilidad del coche
+        ICarRegistry(carRegistryAddress).toggleCarAvailability(_plate);
+
+        // Eliminamos el contrato de la renta
+        delete rentals[_plate];
+    }
 }
