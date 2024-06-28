@@ -1,11 +1,11 @@
 <template>
   <v-container>
     <v-sheet class="mx-auto" width="400">
-      <v-form ref="form" v-model="valid" fast-fail @submit.prevent="createRental(car.plate, car.price, car.dailyCharge, contactPhone, car.owner)">
+      <v-form ref="form" v-model="valid" fast-fail @submit.prevent="rentCar(car.plate, car.price, contactPhone, car.owner)">
         <h2 class="text-center">{{ car.model }}</h2>
         <p class="my-3">
-          By confirming the rental, you agree to an initial charge of <strong>{{ car.price }}$</strong>. 
-          Additionally, a daily charge of <strong>{{ car.dailyCharge }}$</strong> will be applied throughout the rental period.
+          By confirming the rental, you agree to pay a charge of <strong>{{ car.price }}$</strong> for one day's use of this vehicle. 
+          In addition, when you return the vehicle, you will be charged a processing fee.
         </p>
         <v-text-field 
           v-model="contactPhone"
@@ -26,8 +26,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Web3 from 'web3'
-import carRegistryJson from '../../../build/contracts/CarRegistry.json'
-import carRentalJson from '../../../build/contracts/CarRentalContract.json'
+import carRentalJson from '../../../build/contracts/CarRental.json'
 import API from '../axios'
 import cc from 'cryptocompare'
 
@@ -37,8 +36,8 @@ const car = ref({
   plate: '',
   autonomy: '',
   price: '',
-  dailyCharge: '',
-  owner: ''
+  owner: '',
+  available: ''
 })
 const contactPhone = ref('')
 const valid = ref(false)
@@ -52,14 +51,10 @@ const contactPhoneRules = [
   value => /^\d{9}/.test(value) || 'Phone must have 9 digits'
 ]
 
-
-const goToAvailableCars = () => router.push('/cars/available')
-
-// Contrato de registro de coches
-const carRegistryABI = carRegistryJson.abi
-const carRegistryAddress = import.meta.env.VITE_CAR_REGISTRY_CONTRACT_ADDRESS
 const carRentalABI = carRentalJson.abi
 const carRentalAddress = import.meta.env.VITE_CAR_RENTAL_CONTRACT_ADDRESS
+
+const goToAvailableCars = () => router.push('/cars/available')
 
 async function convertUSDtoETH(amountInUsd) {
   try {
@@ -79,50 +74,52 @@ async function convertUSDtoETH(amountInUsd) {
 
 async function setCarDetails() {
     try {
-        // Creamos la instancia del contrato
-        const contract = new window.web3.eth.Contract(carRegistryABI, carRegistryAddress)
- 
-        // Solicitamos los datos del coche que se quiere alquilar
-        const carPlate = route.params.plate
-        const carToBeRented = await contract.methods.getCar(carPlate).call()
-        car.value = {
-          model: carToBeRented[0],
-          plate: carToBeRented[1],
-          autonomy: carToBeRented[2].toString(),
-          price: carToBeRented[3].toString(),
-          dailyCharge: carToBeRented[4].toString(),
-          available: carToBeRented[5],
-          owner: carToBeRented[6],
-        }
+        // Sacamos la matricula del coche de la url 
+        const plate = route.params.plate
+
+        // Obtenemos los detalles del coche y los seteamos
+        const { data: carToBeRented } = await API.get(`cars/${plate}`)
+        car.value = carToBeRented
+
     } catch (error) {
-        console.error('Failed to load available cars: ', error)
+        console.error('Failed to load car data: ', error)
     }
 }
 
-async function createRental(plate, price, dailyCharge, phone, owner) {
+
+async function getClientAccount() {
+    if (!window.ethereum) {
+        console.error("Please install MetaMask!");
+        return;
+    }
+    const web3 = new Web3(window.ethereum);
+    const accounts = await web3.eth.getAccounts();
+    const account = accounts[0];
+
+    return account
+}
+
+async function rentCar(plate, price, contactPhone, owner) {
 
   try {
-    const amountInEther = await convertUSDtoETH(price)
+    // Obtenemos la wallet del cliente
+    const client = await getClientAccount()
 
     // Creamos la instancia del contrato 
     const contract  = new window.web3.eth.Contract(carRentalABI,  carRentalAddress)
-    const accounts = await window.web3.eth.getAccounts()
-    const account = accounts[0]
 
-    console.log({ account })
-    await contract.methods.createRental(plate, price, dailyCharge, phone, owner).send({ from: account, value: window.web3.utils.toWei(amountInEther.toString(), 'ether')  })
+    const amountInEther = await convertUSDtoETH(price)
+
+    await contract.methods.rentCar(plate, price, contactPhone, owner).send({ from: client, value: window.web3.utils.toWei(amountInEther.toString(), 'ether')  })
     console.log('Rental contract created successfully')
   
     await API.patch(`cars/${plate}`)
     console.log('Car availability updated succesfully in API')
     
     router.push('/cars/available')
-    } catch (error) {
+  } catch (error) {
     console.error('Rental contract failed: ', error)
   }
-
-
-  
 }
 
 
@@ -134,7 +131,5 @@ onMounted(async () => {
     } else {
         console.error("Please install MetaMask!");
     }
-  console.log(await convertUSDtoETH(20))
-  
 })
 </script>

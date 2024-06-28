@@ -77,7 +77,6 @@ async function connectToMetaMask() {
 
 async function registerUser() {
   try {
-    // Registro de usuario en blockchain
     const account = await connectToMetaMask()
 
     // Registro de usuario en bbdd

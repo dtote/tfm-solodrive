@@ -33,7 +33,9 @@ export class CarController {
 
     @Get(':plate')
     async getCar(@Param('plate') plate: string) {
-        return this.carService.findOneByPlate(plate)
+        const car = await this.carService.findOneByPlate(plate) 
+        Logger.log({ car })
+        return car
     }
 
     @Patch(':plate')

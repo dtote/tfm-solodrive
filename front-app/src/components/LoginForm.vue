@@ -42,7 +42,6 @@ async function loginUser() {
 
     if (response.data && response.data.access_token) {
       console.log('User logged in succesfully in API')
-      console.log(response)
       localStorage.setItem('jwtToken', response.data.access_token)
       router.replace('cars/available')
     } else {

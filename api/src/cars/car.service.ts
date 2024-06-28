@@ -63,15 +63,12 @@ export class CarService {
     }
 
     private deleteCarImage(plate: string) {
-        // Construir el path a la carpeta de uploads
         const uploadsDir = path.join(__dirname, '../../uploads');
 
-        // Verificar que el directorio exista
         if (!fs.existsSync(uploadsDir)) {
             throw new Error(`Uploads directory does not exist: ${uploadsDir}`);
         }
 
-        // Buscar y eliminar el archivo cuyo nombre contiene la matrícula
         const files = fs.readdirSync(uploadsDir);
         const fileToDelete = files.find(file => file.includes(plate));
 

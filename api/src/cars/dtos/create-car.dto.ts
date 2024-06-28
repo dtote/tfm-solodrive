@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer"
-import { IsNotEmpty, IsNumber, IsString } from "class-validator"
+import { IsNotEmpty, IsNumber, IsString, Min } from "class-validator"
 
 export class CreateCarDto {
     @IsNotEmpty()
@@ -13,17 +13,13 @@ export class CreateCarDto {
     @IsNotEmpty()
     @Transform(({ value }) => parseFloat(value))
     @IsNumber()
+    @Min(1, { message: 'Car autonomy must be greater than 0' })
     autonomy: number
 
     @IsNotEmpty()
     @Transform(({ value }) => parseFloat(value))
     @IsNumber()
     price: number
-
-    @IsNotEmpty()
-    @Transform(({ value }) => parseFloat(value))
-    @IsNumber()
-    dailyCharge: number
 
     @IsNotEmpty()
     @IsString()

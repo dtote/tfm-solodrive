@@ -1,11 +1,9 @@
 <template>
     <v-container>
         <v-container class="text-center py-10">
-            <!-- <h1>{{process.env.VUE_APP_CAR_REGISTRY_CONTRACT_ADDRESS}}</h1> -->
-            <!-- <h1>{{USER_REGISTRY_CONTRACT_ADDRESS}}</h1> -->
             <h1 class="display-2 font-weight-bold mb-4">SoloDrive, The Future Of Mobility</h1>
-            <h2 class="text-center subtitle-1 font-weight-light mb-4"> <br> Rent an autonomous car for seamless travel
-                or list your own for extra income. Enjoy secure and effortless transactions
+            <h2 class="text-center subtitle-1 font-weight-light mb-4"> <br> Rent an autonomous car for trouble-free, all day trips
+                or share your own for extra income. Enjoy fast, secure and effortless transactions.
             </h2>
         </v-container>
         <v-parallax height="400" src="@/assets/autonomous-vehicles.png" alt="Autonomous Cars">
@@ -39,17 +37,17 @@ const loggedIn = ref(!!localStorage.getItem('user'))
 const features = ref([
     {
         title: 'Decentralized',
-        description: 'Our platform is based on the Ethereum blockchain, ensuring decentralization and security.',
+        description: 'Our platform is based on the blockchain technology, ensuring decentralization and security. All rental payments are secure and processed through the Ethereum blockchain, providing transparency and eliminating the need for intermediaries.',
         icon: 'mdi-ethereum',
     },
     {
         title: 'Eco-friendly',
-        description: 'We only rent electric autonomous vehicles, taking care of the environment.',
+        description: 'We only rent electric autonomous vehicles, taking care of the environment. We only allow listings for electric vehicles, preferably autonomous, as part of our commitment to the environment, ensuring a greener future.',
         icon: 'mdi-leaf',
     },
     {
         title: 'Secure',
-        description: 'Security is our priority, all our cars are equipped with cutting-edge technology.',
+        description: 'Security is our priority. All transactions are protected by blockchain technology, ensuring that rental agreements are immutable and transparent. This provides peace of mind for both renters and owners.',
         icon: 'mdi-shield-check',
     },
 ]);
@@ -88,7 +86,6 @@ watch(loggedIn, (newVal) => {
 .parallax-image::before {
     content: "";
     background: rgba(255, 255, 255, 0.5);
-    /* Adjust the last value to change transparency */
     position: absolute;
     top: 0;
     right: 0;

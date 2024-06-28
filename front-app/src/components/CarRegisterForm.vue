@@ -6,7 +6,6 @@
         <v-text-field v-model="car.plate" :rules="plateRules" label="Plate" placeholder="1234-ABC"></v-text-field>
         <v-text-field v-model="car.autonomy" :rules="autonomyRules" label="Autonomy (km)" placeholder="250"></v-text-field>
         <v-text-field v-model="car.price" :rules="priceRules" label="Price ($)" placeholder="40"></v-text-field>
-        <v-text-field v-model="car.dailyCharge" :rules="dailyChargeRules" label="Daily charge ($)" placeholder="20"></v-text-field>
         <v-file-input 
           label="Upload a clear clear photo of the vehicule" 
           variant="underlined" 
@@ -36,7 +35,6 @@ const car = ref({
   plate: '',
   autonomy: '',
   price: '',
-  dailyCharge: '',
   owner: '',
   imageUrl: ''
 })
@@ -54,15 +52,12 @@ const plateRules = [
 ]
 const autonomyRules = [
   value => !!value || 'Car autonomy is required',
-  value => /^\d*$/.test(value) || 'Car autonomy must be a number'
+  value => /^\d*$/.test(value) || 'Car autonomy must be a number',
+  value => value > 0 || 'Car autonomy must be greater than 0'
 ]
 const priceRules = [
   value => !!value || 'Car price is required',
   value => /^\d*$/.test(value) || 'Car price must be a number'
-]
-const dailyChargeRules = [
-  value => !!value || 'Car daily charge is required',
-  value => /^\d*$/.test(value) || 'Car daily charge must be a number'
 ]
 
 const goToAvailableCars = () => router.push('/cars/available')

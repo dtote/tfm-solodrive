@@ -24,9 +24,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router';
 import Web3 from 'web3'
-import carRentalJson from '../../../build/contracts/CarRentalContract.json'
+import carRentalJson from '../../../build/contracts/CarRental.json'
 import API from '@/axios';
 
 
@@ -35,81 +34,74 @@ const columns = computed(() => {
     const col = [[], [], []]
     let currentColumnIndex = 0
     clientRentals.value.forEach((rental) => {
-        const rentalToBeAdded = {
-            plate: rental[0],
-            price: rental[1].toString(),
-            dailyCharge: rental[2].toString(),
-            funds: rental[3].toString(),
-            charges: rental[4].toString(),
-            phone: rental[5],
-            owner: rental[6],
-            client: rental[7],
-            imageUrl: rental[8],
-            model: rental[9]
-        }
-        col[currentColumnIndex].push(rentalToBeAdded)
+        col[currentColumnIndex].push(rental)
         currentColumnIndex = (currentColumnIndex + 1) % 3
     })
     return col
 })
 
-const router = useRouter()
-// const goToCarRegister = () => router.push('/cars/register')
-
 const carRentalABI = carRentalJson.abi
 const carRentalAddress = import.meta.env.VITE_CAR_RENTAL_CONTRACT_ADDRESS
 
-async function returnCar(plate) {
-    try {
-    // Creamos la instancia del contrato 
-    const contract  = new window.web3.eth.Contract(carRentalABI,  carRentalAddress)
-    const accounts = await window.web3.eth.getAccounts()
-    const account = accounts[0]
-
-    await contract.methods.deleteRental(plate).send({ from: account })
-    console.log('Rental contract deleted successfully')
-
-    await API.patch(`cars/${plate}`)
-    console.log('Car availability updated succesfully in API')
-
-    await getOwnerCars()
-    } catch (error) {
-        console.error('Failed to return car: ', error)
-    }
-}
-
-async function getOwnerCars() {
+async function getClientAccount() {
     if (!window.ethereum) {
         console.error("Please install MetaMask!");
         return;
     }
     const web3 = new Web3(window.ethereum);
-    const accounts = await web3.eth.getAccounts(); // Obtiene la dirección actual de MetaMask
-    const account = accounts[0]; // Asume que queremos la primera cuenta
+    const accounts = await web3.eth.getAccounts();
+    const account = accounts[0];
+
+    return account
+}
+
+async function returnCar(plate) {
+    const client = await getClientAccount()
+
+    try {
+    // Creamos la instancia del contrato 
+    const contract  = new window.web3.eth.Contract(carRentalABI,  carRentalAddress)
+
+    await contract.methods.returnCar(plate).send({ from: client })
+    console.log('Rental contract deleted successfully')
+
+    await API.patch(`cars/${plate}`)
+    console.log('Car availability updated succesfully in API')
+
+    await getClientCars()
+    } catch (error) {
+        console.error('Failed to return car: ', error)
+    }
+}
+
+
+
+async function getClientCars() {
+    const client = await getClientAccount()
 
     try {
         // Creamos la instancia del contrato
         const contract = new window.web3.eth.Contract(carRentalABI, carRentalAddress)
  
-        // Solicitamos las matrículas de los coches publicados por el usuario
-        const clientRentalCarPlates = await contract.methods.getClientRentalCarPlates(account).call()
-        clientRentals.value = await Promise.all(clientRentalCarPlates.map(async (currentCarPlate) => {
-            const rental = await contract.methods.getRental(currentCarPlate).call()
-            const { data: car } = await API.get(`/cars/${currentCarPlate}`)
-            rental[8] = car.imageUrl
-            rental[9] = car.model
+        // Obtenemos los coches alquilados por el cliente
+        const clientActiveRentals = await contract.methods.getActiveRentalsByClient(client).call()
+        clientRentals.value = await Promise.all(clientActiveRentals.map(async (rental) => {
+            const { data: car } = await API.get(`cars/${rental.plate}`)
 
-            return rental
+            rental.model = car.model
+            rental.imageUrl = car.imageUrl
+
+            return rental;
         }))
     } catch (error) {
-        console.error('Failed to load owner cars: ', error)
+        console.error('Failed to load rented cars: ', error)
     }
 }
 
 onMounted(async () => {
     if (window.ethereum) {
         web3 = new Web3(window.ethereum);
-        await getOwnerCars();
+        await getClientCars();
     } else {
         console.error("Please install MetaMask!");
     }

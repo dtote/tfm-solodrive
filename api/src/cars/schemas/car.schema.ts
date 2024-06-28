@@ -16,12 +16,9 @@ export class Car {
     price: number
 
     @Prop({ required: true })
-    dailyCharge: number
-
-    @Prop()
     owner: string
 
-    @Prop()
+    @Prop({ required: true })
     imageUrl: string
 
     @Prop({ default: true })
