@@ -6,7 +6,7 @@
                 or share your own for extra income. Enjoy fast, secure and effortless transactions.
             </h2>
         </v-container>
-        <v-parallax height="400" src="@/assets/autonomous-vehicles.png" alt="Autonomous Cars">
+        <v-parallax height="350" src="@/assets/autonomous-vehicles.png" alt="Autonomous Cars">
             <v-container class="fill-height d-flex justify-center align-center text-center">
                 <div>
                     <v-btn large class="white--text" @click="goToRegister">
